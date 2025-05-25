@@ -1,0 +1,6 @@
+Place the required GFPGAN model weights in this folder:
+
+- parsing_parsenet.pth
+- detection_Resnet50_Final.pth
+
+These files should be downloaded when you run the setup scripts or can be obtained from the GFPGAN repository. 

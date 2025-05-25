@@ -1,0 +1,8 @@
+Place the inswapper model file in this directory:
+
+- inswapper_128_fp16.onnx
+
+This file should be downloaded from:
+https://huggingface.co/hacksider/deep-live-cam/resolve/main/inswapper_128_fp16.onnx?download=true
+
+Note: This is the same file that goes in the models/ directory, but some configurations may look for it in this location. 

@@ -168,4 +168,16 @@ models/*.pth
 models/*.onnx
 models/*.pkl
 models/*.bin
-models/*.safetensors 
+models/*.safetensors
+
+# GFPGAN weights
+gfpgan/weights/*.pth
+gfpgan/weights/*.onnx
+gfpgan/weights/*.pkl
+
+# Model files in subdirectories
+**/*.pth
+**/*.onnx
+**/*.pkl
+**/*.bin
+**/*.safetensors 
