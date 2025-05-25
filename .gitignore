@@ -161,7 +161,11 @@ $RECYCLE.BIN/
 
 # Project specific
 uploads/
-models/
 *.pkl
-*.pth
-*.onnx 
+
+# Model files (keep directory structure but exclude large model files)
+models/*.pth
+models/*.onnx
+models/*.pkl
+models/*.bin
+models/*.safetensors 
