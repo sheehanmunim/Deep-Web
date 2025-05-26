@@ -41,7 +41,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Global variables for tracking processing status
-processing_status = {"status": "idle", "message": "Ready", "progress": 0, "preview": None}
+processing_status = {"status": "idle", "message": "Ready", "progress": 0, "preview": None, "detailed_logs": []}
 processing_thread = None
 
 # Global variables for multiple file support
@@ -107,7 +107,63 @@ def image_to_base64(image_path):
 def update_status(message: str, scope: str = 'WEB') -> None:
     """Update processing status for web interface"""
     global processing_status
-    processing_status["message"] = message
+    
+    # Parse progress information from video processing output
+    import re
+    progress_match = re.search(r'(\d+)%\|[▏▎▍▌▋▊▉█\s]*\|\s*(\d+)/(\d+)\s*\[([^\]]+)<([^\]]+),\s*([^,]+),\s*execution_providers=([^\]]+)\]', message)
+    
+    if progress_match:
+        percentage = int(progress_match.group(1))
+        current_frame = int(progress_match.group(2))
+        total_frames = int(progress_match.group(3))
+        elapsed_time = progress_match.group(4)
+        remaining_time = progress_match.group(5)
+        frame_rate = progress_match.group(6)
+        execution_provider = progress_match.group(7)
+        
+        # Update progress with detailed video information
+        processing_status["progress"] = percentage
+        processing_status["message"] = f"Processing video: {current_frame}/{total_frames} frames ({percentage}%)"
+        processing_status["video_progress"] = {
+            "current_frame": current_frame,
+            "total_frames": total_frames,
+            "elapsed_time": elapsed_time,
+            "remaining_time": remaining_time,
+            "frame_rate": frame_rate,
+            "execution_provider": execution_provider.strip("'[]")
+        }
+        
+        # Add detailed log entry with video progress
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        detailed_message = f"[{timestamp}] [VIDEO-PROGRESS] 🎬 Frame {current_frame}/{total_frames} ({percentage}%) | ⏱️ {elapsed_time}<{remaining_time} | 🚀 {frame_rate}"
+        processing_status["detailed_logs"].append(detailed_message)
+    else:
+        # Regular status update
+        processing_status["message"] = message
+        
+        # Add detailed log entry with timestamp
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        
+        # Add emoji indicators based on scope
+        emoji_map = {
+            'BATCH': '🚀',
+            'SETUP': '📁', 
+            'PROCESS': '🎯',
+            'ERROR': '❌',
+            'WEB': '🌐',
+            'DLC.FACE-SWAPPER': '🎭'
+        }
+        emoji = emoji_map.get(scope, '📝')
+        
+        detailed_message = f"[{timestamp}] [{scope}] {emoji} {message}"
+        processing_status["detailed_logs"].append(detailed_message)
+    
+    # Keep only last 50 log entries to prevent memory bloat
+    if len(processing_status["detailed_logs"]) > 50:
+        processing_status["detailed_logs"] = processing_status["detailed_logs"][-50:]
+    
     print(f'[{scope}] {message}')
 
 @app.route('/')
@@ -265,7 +321,7 @@ def start_processing():
     batch_results = []
     
     # Reset status
-    processing_status = {"status": "processing", "message": "Starting batch processing...", "progress": 0, "preview": None, "batch_progress": 0, "total_files": len(uploaded_targets)}
+    processing_status = {"status": "processing", "message": "Starting batch processing...", "progress": 0, "preview": None, "batch_progress": 0, "total_files": len(uploaded_targets), "detailed_logs": []}
     
     # Start batch processing in a separate thread
     def batch_process_wrapper():
@@ -273,9 +329,14 @@ def start_processing():
             total_targets = len(uploaded_targets)
             completed = 0
             
+            update_status("🚀 Initializing batch processing...", "BATCH")
+            update_status(f"📊 Processing {total_targets} target file(s) with source: {uploaded_sources[0]['original_name']}", "BATCH")
+            
             for i, target_file in enumerate(uploaded_targets):
                 # Use first source file for processing
                 source_file = uploaded_sources[0]
+                
+                update_status(f"📁 Setting up files for target {i+1}/{total_targets}", "SETUP")
                 
                 # Set current files for processing
                 modules.globals.source_path = source_file['filepath']
@@ -291,9 +352,14 @@ def start_processing():
                 processing_status["message"] = f"Processing {target_file['original_name']} ({i+1}/{total_targets})"
                 processing_status["batch_progress"] = i
                 
+                update_status(f"🎯 Processing: {target_file['original_name']}", "PROCESS")
+                update_status(f"💾 Output will be saved as: {output_filename}", "PROCESS")
+                
                 # Process current file
                 from modules.core import start
                 start()
+                
+                update_status(f"✅ Completed processing target {i+1}/{total_targets}", "PROCESS")
                 
                 # Generate preview of the result
                 preview_data = None
@@ -328,11 +394,17 @@ def start_processing():
             processing_status["message"] = f"Batch processing completed! {completed} files processed."
             processing_status["batch_progress"] = total_targets
             
+            update_status("🎉 Batch processing completed successfully!", "BATCH")
+            update_status(f"📈 Total files processed: {completed}/{total_targets}", "BATCH")
+            
         except Exception as e:
             processing_status["status"] = "error"
             processing_status["message"] = f"Batch processing error: {str(e)}"
             processing_status["progress"] = 0
             processing_status["preview"] = None
+            
+            update_status(f"❌ Error during batch processing: {str(e)}", "ERROR")
+            update_status("🔧 Check your files and settings, then try again", "ERROR")
     
     processing_thread = threading.Thread(target=batch_process_wrapper)
     processing_thread.start()
