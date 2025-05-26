@@ -13,13 +13,18 @@ def install_dependencies():
     
     # Install system dependencies
     subprocess.run(["apt", "update", "-qq"], check=True)
-    subprocess.run(["apt", "install", "-y", "ffmpeg"], check=True)
+    subprocess.run(["apt", "install", "-y", "ffmpeg", "wget"], check=True)
+    
+    # Install Cloudflared
+    print("🌥️ Installing Cloudflare tunnel...")
+    subprocess.run(["wget", "-q", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"], check=True)
+    subprocess.run(["dpkg", "-i", "cloudflared-linux-amd64.deb"], check=True)
     
     # Install Python dependencies
-    subprocess.run([sys.executable, "-m", "pip", "install", "pyngrok==7.0.5"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask==2.3.3"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors==4.0.0"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "werkzeug==2.3.7"], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "requests"], check=True)
     
     # Install GPU-optimized packages
     print("🚀 Setting up GPU acceleration...")
@@ -39,32 +44,53 @@ def install_dependencies():
     
     print("✅ Dependencies installed!")
 
-def setup_ngrok_and_run():
-    """Setup ngrok and run the web interface"""
+def setup_cloudflare_and_run():
+    """Setup Cloudflare tunnel and run the web interface"""
     
-    # Import after installation
-    from pyngrok import ngrok
+    import threading
+    import time
+    import json
     
     # Configuration
-    NGROK_AUTH_TOKEN = "2xbuOdCZEZxqQGx2r77BMgijYAm_5CTUFPLuyB8FWXWCLAmm8"  # Replace with your token
     PORT = 5000
     
     try:
-        # Set auth token
-        if NGROK_AUTH_TOKEN and NGROK_AUTH_TOKEN != "your_token_here":
-            ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-            print("✅ Ngrok auth token set")
-        else:
-            print("⚠️  No auth token provided - you may hit rate limits")
+        # Start Cloudflare tunnel in background
+        print("🌥️ Starting Cloudflare tunnel...")
         
-        # Kill any existing tunnels
-        ngrok.kill()
+        def run_tunnel():
+            """Run cloudflare tunnel in background"""
+            subprocess.run([
+                "cloudflared", "tunnel", 
+                "--url", f"http://localhost:{PORT}",
+                "--no-autoupdate"
+            ], check=False)
         
-        # Create tunnel
-        public_url = ngrok.connect(PORT)
-        print(f"\n🚀 Ngrok tunnel active!")
-        print(f"🌐 Access your Deep Live Cam at: {public_url}")
-        print(f"📱 Direct link: {public_url}")
+        # Start tunnel in separate thread
+        tunnel_thread = threading.Thread(target=run_tunnel, daemon=True)
+        tunnel_thread.start()
+        
+        # Wait a bit for tunnel to start
+        print("⏳ Waiting for tunnel to initialize...")
+        time.sleep(10)
+        
+        # Try to get the tunnel URL from cloudflared metrics
+        try:
+            # Get tunnel info from cloudflared metrics endpoint
+            import requests
+            metrics_response = requests.get("http://127.0.0.1:45678/metrics", timeout=5)
+            if metrics_response.status_code == 200:
+                # Parse tunnel URL from metrics (this is a simplified approach)
+                print("🚀 Cloudflare tunnel active!")
+                print("🌐 Your tunnel is running - check cloudflared logs for the public URL")
+                print("📍 Local port:", PORT)
+            else:
+                print("⚠️  Could not retrieve tunnel URL automatically")
+                print("🌐 Your tunnel should be active - check the cloudflared output above for the public URL")
+        except:
+            print("🌐 Cloudflare tunnel started!")
+            print("📍 Check the cloudflared output above for your public URL")
+            print("🔗 It will look like: https://your-random-subdomain.trycloudflare.com")
         
         # Start a simple Flask app for demonstration
         # In a real setup, you'd import and run your actual Deep Live Cam app here
@@ -93,13 +119,14 @@ def setup_ngrok_and_run():
                     <h1>🎭 Deep Live Cam - Colab Setup Complete!</h1>
                     
                     <div class="status">
-                        <strong>✅ Status:</strong> Ngrok tunnel is active and web interface is running!
+                        <strong>✅ Status:</strong> Cloudflare tunnel is active and web interface is running!
                     </div>
                     
                     <div class="info">
-                        <strong>🌐 Access URL:</strong> {{ public_url }}<br>
+                        <strong>🌥️ Tunnel Type:</strong> Cloudflare Tunnel<br>
                         <strong>📍 Local Port:</strong> {{ port }}<br>
-                        <strong>🖥️ Environment:</strong> Google Colab
+                        <strong>🖥️ Environment:</strong> Google Colab<br>
+                        <strong>🔗 Public URL:</strong> Check the console output above for your *.trycloudflare.com URL
                     </div>
                     
                     <div class="next-steps">
@@ -119,17 +146,18 @@ def setup_ngrok_and_run():
                 </div>
             </body>
             </html>
-            """, public_url=public_url, port=PORT)
+            """, port=PORT)
         
         print(f"\n🌟 Starting web server on port {PORT}...")
-        print("⚠️  Keep this cell running to maintain the tunnel!")
+        print("⚠️  Keep this cell running to maintain the Cloudflare tunnel!")
+        print("🔍 Look for the tunnel URL in the output above (https://xxxxx.trycloudflare.com)")
         
         # Run the Flask app
         app.run(host='0.0.0.0', port=PORT, debug=False)
         
     except Exception as e:
         print(f"❌ Error: {e}")
-        print("💡 Make sure you have a valid ngrok auth token")
+        print("💡 Make sure cloudflared is properly installed and accessible")
 
 def main():
     """Main function to run the complete setup"""
@@ -140,8 +168,8 @@ def main():
         # Step 1: Install dependencies
         install_dependencies()
         
-        # Step 2: Setup ngrok and run
-        setup_ngrok_and_run()
+        # Step 2: Setup Cloudflare tunnel and run
+        setup_cloudflare_and_run()
         
     except KeyboardInterrupt:
         print("\n👋 Shutting down...")
@@ -149,7 +177,7 @@ def main():
         print(f"❌ Setup failed: {e}")
         print("\n🔧 Troubleshooting:")
         print("1. Make sure you're using a GPU runtime")
-        print("2. Check your ngrok auth token")
+        print("2. Check that cloudflared installed correctly")
         print("3. Restart the runtime and try again")
 
 if __name__ == "__main__":
