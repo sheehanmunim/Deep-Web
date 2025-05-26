@@ -199,6 +199,170 @@
         color: #666;
       }
 
+      /* Video preview styles */
+      .video-preview-container {
+        position: relative;
+        width: 50px;
+        height: 50px;
+        border-radius: 5px;
+        overflow: hidden;
+        background: #000;
+      }
+
+      .file-preview-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 5px;
+      }
+
+      .video-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+
+      .video-preview-container:hover .video-overlay {
+        opacity: 1;
+      }
+
+      .video-icon {
+        color: white;
+        font-size: 1.2em;
+      }
+
+      .play-btn {
+        background: #52c41a;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.8em;
+        margin-left: 5px;
+        transition: background 0.3s ease;
+      }
+
+      .play-btn:hover {
+        background: #389e0d;
+      }
+
+      /* Result video styles */
+      .result-video-container {
+        width: 100%;
+        max-width: 400px;
+        height: 250px;
+        margin: 10px 0;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .result-video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+      }
+
+      .video-play-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 15px;
+        border-radius: 50%;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        font-size: 1.5em;
+      }
+
+      .result-video-container:hover .video-play-overlay {
+        opacity: 1;
+      }
+
+      .play-result-btn {
+        background: #722ed1;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: background 0.3s ease;
+      }
+
+      .play-result-btn:hover {
+        background: #531dab;
+      }
+
+      /* Video modal styles */
+      .video-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+      }
+
+      .video-modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90vw;
+        max-height: 90vh;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .video-modal video {
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+      }
+
+      .video-modal-close {
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        color: white;
+        font-size: 30px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1001;
+        background: rgba(0, 0, 0, 0.5);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s ease;
+      }
+
+      .video-modal-close:hover {
+        background: rgba(0, 0, 0, 0.8);
+      }
+
       .file-actions {
         margin-left: 10px;
       }
@@ -860,6 +1024,17 @@
       <img class="modal-content" id="modalImage" />
     </div>
 
+    <!-- Full-screen video modal -->
+    <div id="videoModal" class="video-modal" onclick="closeVideoModal()">
+      <span class="video-modal-close" onclick="closeVideoModal()">&times;</span>
+      <div class="video-modal-content">
+        <video id="modalVideo" controls autoplay>
+          <source id="modalVideoSource" src="" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    </div>
+
     <script>
       let uploadedSources = [];
       let uploadedTargets = [];
@@ -917,8 +1092,18 @@
             (file) => `
           <div class="file-item" data-file-id="${file.id}">
             ${
-              file.preview
-                ? `<img src="data:image/jpeg;base64,${file.preview}" class="file-preview" alt="preview">`
+              file.type === "video"
+                ? `<div class="file-preview video-preview-container" onclick="openVideoModal('/preview/${file.filename}')">
+                     <video class="file-preview-video" muted preload="metadata">
+                       <source src="/preview/${file.filename}" type="video/mp4">
+                       Your browser does not support the video tag.
+                     </video>
+                     <div class="video-overlay">
+                       <span class="video-icon">🎬</span>
+                     </div>
+                   </div>`
+                : file.preview
+                ? `<img src="data:image/jpeg;base64,${file.preview}" class="file-preview" alt="preview" onclick="openImageFullscreen(this.src)">`
                 : '<div class="file-preview" style="background: #f0f0f0; display: flex; align-items: center; justify-content: center;">📄</div>'
             }
             <div class="file-info">
@@ -929,6 +1114,11 @@
               <button class="remove-btn" onclick="removeFile('source', ${
                 file.id
               })">Remove</button>
+              ${
+                file.type === "video"
+                  ? '<button class="play-btn" onclick="playVideo(this)">▶️ Play</button>'
+                  : ""
+              }
             </div>
           </div>
         `
@@ -945,8 +1135,18 @@
             (file) => `
           <div class="file-item" data-file-id="${file.id}">
             ${
-              file.preview
-                ? `<img src="data:image/jpeg;base64,${file.preview}" class="file-preview" alt="preview">`
+              file.type === "video"
+                ? `<div class="file-preview video-preview-container" onclick="openVideoModal('/preview/${file.filename}')">
+                     <video class="file-preview-video" muted preload="metadata">
+                       <source src="/preview/${file.filename}" type="video/mp4">
+                       Your browser does not support the video tag.
+                     </video>
+                     <div class="video-overlay">
+                       <span class="video-icon">🎬</span>
+                     </div>
+                   </div>`
+                : file.preview
+                ? `<img src="data:image/jpeg;base64,${file.preview}" class="file-preview" alt="preview" onclick="openImageFullscreen(this.src)">`
                 : '<div class="file-preview" style="background: #f0f0f0; display: flex; align-items: center; justify-content: center;">📄</div>'
             }
             <div class="file-info">
@@ -957,6 +1157,11 @@
               <button class="remove-btn" onclick="removeFile('target', ${
                 file.id
               })">Remove</button>
+              ${
+                file.type === "video"
+                  ? '<button class="play-btn" onclick="playVideo(this)">▶️ Play</button>'
+                  : ""
+              }
             </div>
           </div>
         `
@@ -1345,32 +1550,59 @@
               if (newResults.length > 0) {
                 // Append new results to existing ones
                 const newResultsHTML = newResults
-                  .map(
-                    (result, index) => `
+                  .map((result, index) => {
+                    const isVideo =
+                      result.output_filename &&
+                      (result.output_filename.toLowerCase().endsWith(".mp4") ||
+                        result.output_filename.toLowerCase().endsWith(".avi") ||
+                        result.output_filename.toLowerCase().endsWith(".mov") ||
+                        result.output_filename.toLowerCase().endsWith(".mkv"));
+
+                    return `
                   <div class="result-item" style="animation: fadeIn 0.5s ease-in;">
                     <div class="result-info">
                       <strong>Target:</strong> ${result.target}<br>
                       <strong>Source:</strong> ${result.source}
                     </div>
-                                      ${
-                                        result.preview
-                                          ? `<div class="result-preview">
-                        <img src="data:image/jpeg;base64,${result.preview}" 
-                             class="result-image" 
-                             alt="Result ${displayedResultsCount + index + 1}"
-                             onclick="openImageFullscreen(this.src)"
-                             title="Click to view full size">
-                      </div>`
-                                          : '<div class="result-preview">Video processed successfully</div>'
-                                      }
+                    ${
+                      isVideo
+                        ? `<div class="result-preview">
+                            <div class="video-preview-container result-video-container" onclick="openVideoModal('/preview/${result.output_filename}')">
+                              <video class="result-video" muted preload="metadata">
+                                <source src="/preview/${result.output_filename}" type="video/mp4">
+                                Your browser does not support the video tag.
+                              </video>
+                              <div class="video-play-overlay">
+                                <span class="video-play-icon">▶️</span>
+                              </div>
+                            </div>
+                          </div>`
+                        : result.preview
+                        ? `<div class="result-preview">
+                              <img src="data:image/jpeg;base64,${
+                                result.preview
+                              }" 
+                                   class="result-image" 
+                                   alt="Result ${
+                                     displayedResultsCount + index + 1
+                                   }"
+                                   onclick="openImageFullscreen(this.src)"
+                                   title="Click to view full size">
+                            </div>`
+                        : '<div class="result-preview">Processing completed</div>'
+                    }
                     <button class="download-individual" onclick="downloadIndividualResult('${
                       result.output_filename
                     }')">
                       Download
                     </button>
-                  </div>
-                `
-                  )
+                    ${
+                      isVideo
+                        ? '<button class="play-result-btn" onclick="playResultVideo(this)">🎬 Play Video</button>'
+                        : ""
+                    }
+                  </div>`;
+                  })
                   .join("");
 
                 batchResults.innerHTML += newResultsHTML;
@@ -1406,10 +1638,50 @@
         document.getElementById("imageModal").style.display = "none";
       }
 
+      function playVideo(button) {
+        // Find the video element in the same file item
+        const fileItem = button.closest(".file-item");
+        const video = fileItem.querySelector("video");
+        if (video) {
+          openVideoModal(video.querySelector("source").src);
+        }
+      }
+
+      function playResultVideo(button) {
+        // Find the video element in the same result item
+        const resultItem = button.closest(".result-item");
+        const video = resultItem.querySelector("video");
+        if (video) {
+          openVideoModal(video.querySelector("source").src);
+        }
+      }
+
+      function openVideoModal(videoSrc) {
+        const modal = document.getElementById("videoModal");
+        const modalVideo = document.getElementById("modalVideo");
+        const modalVideoSource = document.getElementById("modalVideoSource");
+
+        modalVideoSource.src = videoSrc;
+        modalVideo.load(); // Reload the video with new source
+        modal.style.display = "block";
+
+        // Prevent event bubbling
+        event.stopPropagation();
+      }
+
+      function closeVideoModal() {
+        const modal = document.getElementById("videoModal");
+        const modalVideo = document.getElementById("modalVideo");
+        modal.style.display = "none";
+        modalVideo.pause();
+        modalVideo.currentTime = 0;
+      }
+
       // Close modal with Escape key
       document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
           closeImageModal();
+          closeVideoModal();
         }
       });
 

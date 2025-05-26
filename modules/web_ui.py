@@ -4,7 +4,7 @@ import base64
 import io
 import zipfile
 from typing import Callable
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -56,6 +56,19 @@ UPLOAD_FOLDER = upload_dir
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_video_stream(file_path):
+    """Generate video stream with range support for better performance"""
+    def generate():
+        with open(file_path, 'rb') as f:
+            while True:
+                data = f.read(1024 * 1024)  # Read in 1MB chunks
+                if not data:
+                    break
+                yield data
+    
+    return Response(generate(), mimetype='video/mp4', 
+                   headers={'Accept-Ranges': 'bytes'})
 
 def save_switch_states():
     switch_states = {
@@ -216,7 +229,7 @@ def upload_file():
                 'original_name': file.filename,
                 'filepath': filepath,
                 'preview': preview_data,
-                'type': 'image' if is_image(filepath) else 'video'
+                'type': 'video' if is_video(filepath) else 'image'
             }
             
             # Add to appropriate list
@@ -465,8 +478,19 @@ def download_all_results():
 
 @app.route('/preview/<path:filename>')
 def preview_file(filename):
-    """Serve uploaded files for preview"""
-    return send_file(os.path.join(UPLOAD_FOLDER, filename))
+    """Serve uploaded files for preview with proper content type"""
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    # For video files, use streaming for better performance
+    if filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+        return get_video_stream(file_path)
+    elif filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+        return send_file(file_path, mimetype='image/jpeg')
+    else:
+        return send_file(file_path)
 
 def init_web(start_func: Callable[[], None], destroy_func: Callable[[], None], host='127.0.0.1', port=5000):
     """Initialize and run the web application"""
