@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+<a href="https://colab.research.google.com/github/sheehanmunim/Deep-Web/blob/master/Deep_Live_Cam_Colab.ipynb" target="_blank">
+<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+</p>
+
+<p align="center">
   <img src="media/demo.gif" alt="Demo GIF">
   <img src="media/avgpcperformancedemo.gif" alt="Performance Demo GIF">
 </p>
@@ -138,45 +144,48 @@ If you prefer not to use venv:
 
 ## 🌩️ Google Colab Support
 
-**New!** Run Deep Live Cam directly in Google Colab with ngrok integration for easy web access!
+**Run Deep Live Cam in your browser with zero installation required!**
 
-### Quick Colab Setup
+### 🚀 One-Click Colab Launch
 
-1. **Open Google Colab** and create a new notebook
-2. **Enable GPU runtime**: Runtime → Change runtime type → Hardware accelerator: GPU
-3. **Run this setup code:**
+Click the badge below to launch Deep Live Cam directly in Google Colab:
 
-```python
-# Clone and setup
-!git clone https://github.com/your-username/Deep-Live-Cam-New.git
-%cd Deep-Live-Cam-New
-!apt update -qq && apt install -y ffmpeg
-!pip install -r requirements.txt
+<p align="center">
+<a href="https://colab.research.google.com/github/sheehanmunim/Deep-Web/blob/master/Deep_Live_Cam_Colab.ipynb" target="_blank">
+<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" style="width: 200px;"/>
+</a>
+</p>
 
-# Setup GPU acceleration (IMPORTANT!)
-!pip uninstall -y onnxruntime onnxruntime-gpu
-!pip install onnxruntime-gpu==1.16.3
+**Instructions:**
 
-# Start with ngrok (automatically uses GPU if available)
-!python run_web_colab.py
-```
+1. Click the "Open in Colab" button above
+2. Enable GPU: `Runtime` → `Change runtime type` → `Hardware accelerator: GPU`
+3. Run the setup cell (click the play button ▶️)
+4. Wait for the ngrok URL to appear (~3-5 minutes first time)
+5. Click the URL and start face swapping!
 
-4. **Access the web interface** using the ngrok URL provided in the output
-5. **Upload and process** your images/videos directly in the browser
+### ✨ Why Use Colab?
 
-### Features Available in Colab:
+- 🆓 **Completely Free** - No software installation needed
+- 🚀 **GPU Acceleration** - Faster processing than most laptops
+- 🌐 **Access Anywhere** - Works on any device with internet
+- 🔒 **Private Processing** - Your files stay in your session
+- 📱 **Mobile Friendly** - Use on phones and tablets
+
+### 🎯 Colab Features
 
 - ✅ Full web interface with ngrok tunneling
-- ✅ GPU acceleration for faster processing
-- ✅ No local installation required
-- ✅ Works on any device with internet access
-- ✅ Free tier available (with limitations)
+- ✅ Automatic GPU detection and acceleration
+- ✅ One-click setup with no dependencies
+- ✅ Support for images and videos
+- ✅ Real-time progress monitoring
+- ✅ Download results directly to your device
 
-### 📋 Detailed Colab Guide
+### 📋 Advanced Colab Setup
 
-For complete setup instructions, see [GOOGLE_COLAB_SETUP.md](GOOGLE_COLAB_SETUP.md)
+For users who want to customize their setup, see our detailed guide: [GOOGLE_COLAB_SETUP.md](GOOGLE_COLAB_SETUP.md)
 
-**Pro Tip:** Get a free ngrok auth token at [ngrok.com](https://ngrok.com) to avoid rate limits!
+**Pro Tip:** Get a free ngrok auth token at [ngrok.com](https://ngrok.com) for unlimited usage!
 
 ---
 

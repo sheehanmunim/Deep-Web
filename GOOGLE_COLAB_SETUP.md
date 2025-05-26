@@ -20,8 +20,8 @@ This guide will help you run Deep Live Cam in Google Colab with ngrok integratio
 
 ```python
 # Clone the repository
-!git clone https://github.com/your-username/Deep-Live-Cam-New.git
-%cd Deep-Live-Cam-New
+!git clone https://github.com/sheehanmunim/Deep-Web.git
+%cd Deep-Web
 
 # Install system dependencies
 !apt update -qq
@@ -165,7 +165,7 @@ print("🔑 Ngrok auth token configured")
 
 ## 📚 Additional Resources
 
-- [Deep Live Cam GitHub](https://github.com/your-username/Deep-Live-Cam-New)
+- [Deep Live Cam GitHub](https://github.com/sheehanmunim/Deep-Web)
 - [Google Colab FAQ](https://research.google.com/colaboratory/faq.html)
 - [Ngrok Documentation](https://ngrok.com/docs)
 - [GPU Runtime Guide](https://colab.research.google.com/notebooks/gpu.ipynb)
