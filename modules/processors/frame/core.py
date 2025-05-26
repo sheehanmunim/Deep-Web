@@ -68,6 +68,70 @@ def multi_process_frame(source_path: str, temp_frame_paths: List[str], process_f
 def process_video(source_path: str, frame_paths: list[str], process_frames: Callable[[str, List[str], Any], None]) -> None:
     progress_bar_format = '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
     total = len(frame_paths)
-    with tqdm(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
+    
+    # Use a simpler approach with a wrapper that tracks progress
+    import time
+    last_update_time = 0
+    
+    def update_web_progress(pbar):
+        nonlocal last_update_time
+        current_time = time.time()
+        
+        # Only update every 0.5 seconds to avoid spamming
+        if current_time - last_update_time < 0.5:
+            return
+        last_update_time = current_time
+        
+        try:
+            from modules.core import update_status
+            
+            # Calculate percentage
+            percentage = int((pbar.n / pbar.total) * 100) if pbar.total > 0 else 0
+            
+            # Calculate timing information more accurately
+            current_time = time.time()
+            elapsed_time = current_time - pbar.start_t
+            elapsed = pbar.format_interval(elapsed_time)
+            
+            # Calculate rate (time per frame)
+            if pbar.n > 0 and elapsed_time > 0:
+                rate_value = elapsed_time / pbar.n
+                rate = f"{rate_value:.2f}s/frame"
+            else:
+                rate = "0.00s/frame"
+            
+            # Calculate remaining time
+            if pbar.n > 0 and elapsed_time > 0:
+                remaining_frames = pbar.total - pbar.n
+                time_per_frame = elapsed_time / pbar.n
+                eta_seconds = remaining_frames * time_per_frame
+                remaining = pbar.format_interval(eta_seconds)
+            else:
+                remaining = '00:00'
+            
+            # Create progress message that matches the expected format
+            postfix_str = f"execution_providers={modules.globals.execution_providers}, execution_threads={modules.globals.execution_threads}, max_memory={modules.globals.max_memory}"
+            progress_msg = f"{percentage:3d}%|{'█' * (percentage // 4)}{'▊' if percentage % 4 >= 2 else ''}{'▏' if percentage % 4 == 1 else ''}{'▎' if percentage % 4 == 3 else ''}{' ' * (25 - percentage // 4)}| {pbar.n}/{pbar.total} [{elapsed}<{remaining}, {rate}, {postfix_str}]"
+            
+            # Send to update_status for web interface parsing
+            update_status(progress_msg, 'VIDEO-PROGRESS')
+            
+        except Exception as e:
+            # Fallback to simple progress if detailed formatting fails
+            try:
+                from modules.core import update_status
+                percentage = int((pbar.n / pbar.total) * 100) if pbar.total > 0 else 0
+                update_status(f"Processing video frames: {pbar.n}/{pbar.total} ({percentage}%)", 'VIDEO-PROGRESS')
+            except:
+                pass
+    
+    # Custom progress class that calls our update function
+    class WebProgressBar(tqdm):
+        def update(self, n=1):
+            result = super().update(n)
+            update_web_progress(self)
+            return result
+    
+    with WebProgressBar(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
         progress.set_postfix({'execution_providers': modules.globals.execution_providers, 'execution_threads': modules.globals.execution_threads, 'max_memory': modules.globals.max_memory})
         multi_process_frame(source_path, frame_paths, process_frames, progress)
