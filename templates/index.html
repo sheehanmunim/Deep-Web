@@ -1414,24 +1414,18 @@
         );
 
         if (hasVideoTargets) {
-          // Disable face enhancer for video processing (performance optimization)
-          const faceEnhancerCheckbox = document.getElementById("face_enhancer");
-          if (faceEnhancerCheckbox.checked) {
-            faceEnhancerCheckbox.checked = false;
-            updateSetting("face_enhancer", false);
+          // Face enhancer will remain enabled for video processing
+          // Note: This may impact performance but user preference is maintained
+          const statusText = document.getElementById("status-text");
+          const originalText = statusText.textContent;
+          statusText.textContent =
+            "Video detected - Face enhancer will remain enabled (may affect performance)";
+          statusText.style.color = "#1890ff";
 
-            // Show a brief notification
-            const statusText = document.getElementById("status-text");
-            const originalText = statusText.textContent;
-            statusText.textContent =
-              "Face enhancer disabled automatically for video processing (performance optimization)";
-            statusText.style.color = "#faad14";
-
-            setTimeout(() => {
-              statusText.textContent = originalText;
-              statusText.style.color = "";
-            }, 3000);
-          }
+          setTimeout(() => {
+            statusText.textContent = originalText;
+            statusText.style.color = "";
+          }, 3000);
         }
       }
 
