@@ -70,7 +70,43 @@ pip install -r requirements.txt
 brew install python-tk@3.10
 ```
 
-**Run:** If you don't have a GPU, you can run Deep-Live-Cam using `python run.py`. Note that initial execution will download models (~300MB).
+**5. Run the Application**
+
+**Web Interface (Recommended):**
+
+```bash
+python run_web.py
+```
+
+Then open your browser and go to `http://127.0.0.1:5000`
+
+**Desktop GUI:**
+
+```bash
+python run.py
+```
+
+Note that initial execution will download models (~300MB).
+
+---
+
+## 🚀 Quick Start Guide
+
+Once you have completed the installation:
+
+1. **Start the web interface:**
+
+   ```bash
+   python run_web.py
+   ```
+
+2. **Open your browser** and go to: `http://localhost:5000`
+
+3. **Upload your images/videos** and start face swapping!
+
+That's it! The web interface provides the easiest way to use all features of Deep-Live-Cam.
+
+---
 
 ### GPU Acceleration (Optional)
 
@@ -157,31 +193,61 @@ python run.py --execution-provider openvino
 
 ## Usage
 
-**1. Web Interface Mode (Recommended for Ease of Use)**
+### 🌐 Web Interface Mode (Recommended)
 
-- Execute `python run_web.py` or `run-web.bat` (Windows).
-- Open your web browser and go to `http://127.0.0.1:5000`
-- Upload a source face image using the web interface.
-- Upload a target image/video using the web interface.
-- Configure your processing settings using the toggles.
-- Click "Start Processing" and monitor the progress.
-- Download the result when processing is complete.
+The easiest way to use Deep-Live-Cam is through the web interface:
 
-**2. Desktop GUI Mode**
+**1. Start the Web Server:**
 
-- Execute `python run.py`.
-- Choose a source face image and a target image/video.
-- Click "Start".
-- The output will be saved in a directory named after the target video.
+```bash
+python run_web.py
+```
 
-**3. Webcam Mode**
+Or on Windows, double-click `run-web.bat`
 
-- Execute `python run.py`.
-- Select a source face image.
-- Click "Live".
-- Wait for the preview to appear (10-30 seconds).
-- Use a screen capture tool like OBS to stream.
-- To change the face, select a new source image.
+**2. Open Your Browser:**
+Navigate to `http://127.0.0.1:5000` or `http://localhost:5000`
+
+**3. Use the Interface:**
+
+- Upload a source face image (the face you want to apply)
+- Upload a target image or video (what you want to modify)
+- Configure processing settings using the toggles
+- Click "Start Processing" and monitor the progress
+- Download the result when processing is complete
+
+**Benefits of Web Interface:**
+
+- ✅ Easy to use - no command line knowledge needed
+- ✅ Real-time progress monitoring
+- ✅ Works on any device with a browser
+- ✅ Clean, intuitive interface
+
+### 🖥️ Desktop GUI Mode
+
+For users who prefer a traditional desktop application:
+
+```bash
+python run.py
+```
+
+- Choose a source face image and a target image/video
+- Click "Start" to begin processing
+- The output will be saved in a directory named after the target video
+
+### 📹 Webcam Mode (Real-time)
+
+For live streaming and real-time face swapping:
+
+```bash
+python run.py
+```
+
+- Select a source face image
+- Click "Live" to start webcam mode
+- Wait for the preview to appear (10-30 seconds)
+- Use a screen capture tool like OBS to stream
+- To change the face, select a new source image
 
 ![demo-gif](media/demo.gif)
 
