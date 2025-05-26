@@ -92,7 +92,37 @@ Note that initial execution will download models (~300MB).
 
 ## 🚀 Quick Start Guide
 
-Once you have completed the installation:
+### Recommended Setup (with Virtual Environment)
+
+For the best experience and to avoid dependency conflicts, use these 6 commands:
+
+```bash
+# 1. Create virtual environment
+python -m venv venv
+
+# 2. Activate virtual environment
+venv\Scripts\activate
+
+# 3. Install core dependencies
+pip install -r requirements.txt
+
+# 4. Remove conflicting ONNX Runtime versions
+pip uninstall -y onnxruntime onnxruntime-gpu
+
+# 5. Install GPU-optimized ONNX Runtime
+pip install onnxruntime-gpu==1.16.3
+
+# 6. Start the web interface
+python run_web.py
+```
+
+Then **open your browser** and go to: `http://localhost:5000`
+
+**That's it!** The web interface provides the easiest way to use all features of Deep-Live-Cam with automatic GPU acceleration.
+
+### Alternative (Without Virtual Environment)
+
+If you prefer not to use venv:
 
 1. **Start the web interface:**
 
@@ -103,8 +133,6 @@ Once you have completed the installation:
 2. **Open your browser** and go to: `http://localhost:5000`
 
 3. **Upload your images/videos** and start face swapping!
-
-That's it! The web interface provides the easiest way to use all features of Deep-Live-Cam.
 
 ---
 
@@ -125,7 +153,11 @@ That's it! The web interface provides the easiest way to use all features of Dee
 !apt update -qq && apt install -y ffmpeg
 !pip install -r requirements.txt
 
-# Start with ngrok
+# Setup GPU acceleration (IMPORTANT!)
+!pip uninstall -y onnxruntime onnxruntime-gpu
+!pip install onnxruntime-gpu==1.16.3
+
+# Start with ngrok (automatically uses GPU if available)
 !python run_web_colab.py
 ```
 
@@ -262,6 +294,7 @@ Navigate to `http://127.0.0.1:5000` or `http://localhost:5000`
 - ✅ Real-time progress monitoring
 - ✅ Works on any device with a browser
 - ✅ Clean, intuitive interface
+- ✅ **Auto GPU detection** - automatically uses CUDA acceleration if available
 
 ### 🖥️ Desktop GUI Mode
 

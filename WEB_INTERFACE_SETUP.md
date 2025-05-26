@@ -11,7 +11,8 @@ This guide explains how to use the new web interface for Deep Live Cam, which pr
 ✅ **Real-time Progress** - Live status updates during processing  
 ✅ **Settings Management** - Toggle processing options with intuitive switches  
 ✅ **File Preview** - Preview uploaded images and video thumbnails  
-✅ **Download Results** - Direct download of processed files
+✅ **Download Results** - Direct download of processed files  
+✅ **Auto GPU Detection** - Automatically detects and uses CUDA GPU acceleration
 
 ## Quick Start
 
@@ -48,6 +49,8 @@ python run_web.py
 ```bash
 run-web.bat
 ```
+
+**🚀 GPU Acceleration**: The web interface automatically detects and uses GPU acceleration if available. You'll see GPU information in the startup output.
 
 ### 3. Access the Interface
 
@@ -131,6 +134,13 @@ http://127.0.0.1:5000
 **4. Processing fails**
 
 - Solution: Check that both source and target files are uploaded and valid
+
+**5. Slow processing (CPU instead of GPU)**
+
+- Check startup output for "CUDA GPU detected" message
+- If you see "CPU execution provider", run: `python fix_gpu_setup.py`
+- Or on Windows: `fix-gpu-setup.bat`
+- Ensure you have NVIDIA GPU with CUDA support
 
 ### Debug Mode
 

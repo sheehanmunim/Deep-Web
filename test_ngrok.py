@@ -51,6 +51,29 @@ def test_flask_integration():
         print(f"❌ Flask import failed: {e}")
         return False
 
+def test_gpu_acceleration():
+    """Test if GPU acceleration is available"""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            print(f"✅ GPU available: {torch.cuda.get_device_name(0)}")
+            
+            # Check ONNX Runtime
+            import onnxruntime as ort
+            providers = ort.get_available_providers()
+            if 'CUDAExecutionProvider' in providers:
+                print("✅ ONNX Runtime CUDA provider available")
+                return True
+            else:
+                print("⚠️  ONNX Runtime CUDA provider not available")
+                return False
+        else:
+            print("ℹ️  No CUDA GPU detected")
+            return True  # Not an error, just informational
+    except ImportError as e:
+        print(f"⚠️  Cannot check GPU: {e}")
+        return True  # Not critical for ngrok functionality
+
 def test_environment_variables():
     """Test environment variable handling"""
     # Test setting and getting ngrok auth token
@@ -73,6 +96,7 @@ def run_all_tests():
     tests = [
         ("pyngrok Installation", test_pyngrok_installation),
         ("Flask Integration", test_flask_integration),
+        ("GPU Acceleration", test_gpu_acceleration),
         ("Environment Variables", test_environment_variables),
         ("Ngrok Basic Functionality", test_ngrok_basic_functionality),
     ]

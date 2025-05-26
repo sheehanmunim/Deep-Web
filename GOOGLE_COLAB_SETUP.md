@@ -16,7 +16,7 @@ This guide will help you run Deep Live Cam in Google Colab with ngrok integratio
 2. Create a new notebook
 3. Change runtime to GPU: `Runtime` → `Change runtime type` → `Hardware accelerator: GPU`
 
-### Step 2: Clone and Setup Repository
+### Step 2: Clone and Setup Repository with GPU Support
 
 ```python
 # Clone the repository
@@ -27,10 +27,22 @@ This guide will help you run Deep Live Cam in Google Colab with ngrok integratio
 !apt update -qq
 !apt install -y ffmpeg
 
-# Install Python dependencies
+# Install Python dependencies with GPU support
 !pip install -r requirements.txt
 
-print("✅ Setup complete!")
+# Upgrade to GPU-optimized ONNX Runtime for better performance
+!pip uninstall -y onnxruntime onnxruntime-gpu
+!pip install onnxruntime-gpu==1.16.3
+
+# Verify GPU setup
+import torch
+if torch.cuda.is_available():
+    print(f"✅ GPU Setup Complete!")
+    print(f"🚀 GPU: {torch.cuda.get_device_name(0)}")
+    print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+else:
+    print("⚠️  GPU not detected. Make sure you selected GPU runtime!")
+    print("   Go to Runtime → Change runtime type → Hardware accelerator: GPU")
 ```
 
 ### Step 3: Configure Ngrok (Optional but Recommended)
@@ -102,6 +114,16 @@ print("🔑 Ngrok auth token configured")
 **5. "Module not found" error**
 
 - Solution: Re-run the installation cell.
+
+**6. Still using CPU instead of GPU**
+
+- Check if you enabled GPU runtime: Runtime → Change runtime type → GPU
+- Look for "Applied providers: ['CPUExecutionProvider']" in logs
+- Solution: Run the GPU fix script:
+
+```python
+!python fix_gpu_setup.py
+```
 
 ### Performance Tips
 

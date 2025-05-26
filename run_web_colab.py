@@ -61,11 +61,29 @@ def setup_ngrok(auth_token=None, port=5000):
         print("2. Set a valid auth token (optional but recommended)")
         sys.exit(1)
 
+def setup_gpu_acceleration():
+    """Set up GPU acceleration for faster processing"""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            print(f"🚀 CUDA GPU detected: {torch.cuda.get_device_name(0)}")
+            print(f"   GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+            return True
+        else:
+            print("⚠️  CUDA GPU not available, falling back to CPU")
+            return False
+    except ImportError:
+        print("⚠️  PyTorch not available, cannot detect GPU")
+        return False
+
 def main():
     """Main function to run Deep Live Cam with ngrok in Google Colab"""
     
     print("🎭 Deep Live Cam - Google Colab Edition")
     print("=" * 50)
+    
+    # Check GPU availability
+    gpu_available = setup_gpu_acceleration()
     
     # Default ngrok auth token (replace with your own)
     # Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken
@@ -78,9 +96,29 @@ def main():
     port = 5000
     public_url = setup_ngrok(auth_token, port)
     
-    # Add --web flag to command line arguments
+    # Add command line arguments for optimal performance
     if '--web' not in sys.argv:
         sys.argv.append('--web')
+    
+    # Add GPU acceleration if available
+    if gpu_available:
+        if '--execution-provider' not in sys.argv:
+            sys.argv.extend(['--execution-provider', 'cuda'])
+            print("✅ Enabled CUDA GPU acceleration")
+        
+        # Set reasonable memory limit (leave some for system)
+        if '--max-memory' not in sys.argv:
+            try:
+                import torch
+                gpu_memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                # Use 80% of GPU memory to leave some for system
+                recommended_memory = max(4, int(gpu_memory_gb * 0.8))
+                sys.argv.extend(['--max-memory', str(recommended_memory)])
+                print(f"✅ Set memory limit to {recommended_memory}GB")
+            except:
+                pass
+    else:
+        print("🐌 Running on CPU - processing will be slower")
     
     print("\n🌟 Starting Deep Live Cam Web Interface...")
     print("📋 Instructions:")
@@ -89,6 +127,8 @@ def main():
     print("3. Upload your target image/video")
     print("4. Configure settings as needed")
     print("5. Click 'Process' to start face swapping")
+    if gpu_available:
+        print("🚀 GPU acceleration enabled for faster processing!")
     print("\n⚠️  Note: Keep this cell running to maintain the ngrok tunnel")
     print("=" * 50)
     

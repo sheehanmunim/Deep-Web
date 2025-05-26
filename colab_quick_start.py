@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 def install_dependencies():
-    """Install all required dependencies"""
+    """Install all required dependencies with GPU support"""
     print("🔧 Installing dependencies...")
     
     # Install system dependencies
@@ -20,6 +20,22 @@ def install_dependencies():
     subprocess.run([sys.executable, "-m", "pip", "install", "flask==2.3.3"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors==4.0.0"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "werkzeug==2.3.7"], check=True)
+    
+    # Install GPU-optimized packages
+    print("🚀 Setting up GPU acceleration...")
+    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "onnxruntime", "onnxruntime-gpu"], check=False)
+    subprocess.run([sys.executable, "-m", "pip", "install", "onnxruntime-gpu==1.16.3"], check=True)
+    
+    # Verify GPU setup
+    try:
+        import torch
+        if torch.cuda.is_available():
+            print(f"✅ GPU detected: {torch.cuda.get_device_name(0)}")
+            print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        else:
+            print("⚠️  No GPU detected - make sure you're using GPU runtime!")
+    except ImportError:
+        print("⚠️  Could not verify GPU setup")
     
     print("✅ Dependencies installed!")
 
