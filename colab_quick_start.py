@@ -13,18 +13,17 @@ def install_dependencies():
     
     # Install system dependencies
     subprocess.run(["apt", "update", "-qq"], check=True)
-    subprocess.run(["apt", "install", "-y", "ffmpeg", "wget"], check=True)
+    subprocess.run(["apt", "install", "-y", "ffmpeg"], check=True)
     
-    # Install Cloudflared
-    print("🌥️ Installing Cloudflare tunnel...")
-    subprocess.run(["wget", "-q", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"], check=True)
-    subprocess.run(["dpkg", "-i", "cloudflared-linux-amd64.deb"], check=True)
+    # Download and setup cloudflared
+    print("📦 Installing cloudflared...")
+    subprocess.run(["wget", "-q", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64", "-O", "cloudflared"], check=True)
+    subprocess.run(["chmod", "+x", "cloudflared"], check=True)
     
     # Install Python dependencies
     subprocess.run([sys.executable, "-m", "pip", "install", "flask==2.3.3"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors==4.0.0"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "werkzeug==2.3.7"], check=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "requests"], check=True)
     
     # Install GPU-optimized packages
     print("🚀 Setting up GPU acceleration...")
@@ -47,50 +46,30 @@ def install_dependencies():
 def setup_cloudflare_and_run():
     """Setup Cloudflare tunnel and run the web interface"""
     
-    import threading
     import time
-    import json
     
     # Configuration
     PORT = 5000
     
     try:
         # Start Cloudflare tunnel in background
-        print("🌥️ Starting Cloudflare tunnel...")
+        print("🚀 Starting Cloudflare Tunnel on port 5000...")
         
-        def run_tunnel():
-            """Run cloudflare tunnel in background"""
-            subprocess.run([
-                "cloudflared", "tunnel", 
-                "--url", f"http://localhost:{PORT}",
-                "--no-autoupdate"
-            ], check=False)
+        # Start cloudflared tunnel in background
+        tunnel_process = subprocess.Popen([
+            "./cloudflared", "tunnel", 
+            "--url", f"http://localhost:{PORT}",
+            "--no-autoupdate"
+        ])
         
-        # Start tunnel in separate thread
-        tunnel_thread = threading.Thread(target=run_tunnel, daemon=True)
-        tunnel_thread.start()
-        
-        # Wait a bit for tunnel to start
+        # Give time for the tunnel to connect
         print("⏳ Waiting for tunnel to initialize...")
-        time.sleep(10)
+        time.sleep(5)
         
-        # Try to get the tunnel URL from cloudflared metrics
-        try:
-            # Get tunnel info from cloudflared metrics endpoint
-            import requests
-            metrics_response = requests.get("http://127.0.0.1:45678/metrics", timeout=5)
-            if metrics_response.status_code == 200:
-                # Parse tunnel URL from metrics (this is a simplified approach)
-                print("🚀 Cloudflare tunnel active!")
-                print("🌐 Your tunnel is running - check cloudflared logs for the public URL")
-                print("📍 Local port:", PORT)
-            else:
-                print("⚠️  Could not retrieve tunnel URL automatically")
-                print("🌐 Your tunnel should be active - check the cloudflared output above for the public URL")
-        except:
-            print("🌐 Cloudflare tunnel started!")
-            print("📍 Check the cloudflared output above for your public URL")
-            print("🔗 It will look like: https://your-random-subdomain.trycloudflare.com")
+        print("🌐 Cloudflare tunnel started!")
+        print("📍 Look for the tunnel URL in the output above")
+        print("🔗 It will look like: https://random-subdomain.trycloudflare.com")
+        print("✅ No authentication required - unlimited bandwidth!")
         
         # Start a simple Flask app for demonstration
         # In a real setup, you'd import and run your actual Deep Live Cam app here
@@ -150,7 +129,8 @@ def setup_cloudflare_and_run():
         
         print(f"\n🌟 Starting web server on port {PORT}...")
         print("⚠️  Keep this cell running to maintain the Cloudflare tunnel!")
-        print("🔍 Look for the tunnel URL in the output above (https://xxxxx.trycloudflare.com)")
+        print("🔍 Your public URL will appear in the cloudflared output above")
+        print("💡 Look for a line containing 'https://xxxxx.trycloudflare.com'")
         
         # Run the Flask app
         app.run(host='0.0.0.0', port=PORT, debug=False)

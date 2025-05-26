@@ -11,55 +11,55 @@ import os
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from pyngrok import ngrok
-    print("✓ Ngrok is available")
-except ImportError:
-    print("❌ Error: pyngrok is not installed. Please run:")
-    print("pip install pyngrok==7.0.5")
-    sys.exit(1)
+import subprocess
+import time
+
+print("✓ Cloudflare tunnel will be set up automatically")
 
 from modules import core
 import modules.globals
 from modules.memory_optimizer import memory_optimizer
 
-def setup_ngrok(auth_token=None, port=5000):
+def setup_cloudflare_tunnel(port=5000):
     """
-    Set up ngrok tunnel for Google Colab
+    Set up Cloudflare tunnel for Google Colab
     
     Args:
-        auth_token (str): Your ngrok authtoken. Get it from https://dashboard.ngrok.com/get-started/your-authtoken
         port (int): Local port to expose (default: 5000)
     
     Returns:
-        str: Public ngrok URL
+        str: Status message
     """
     try:
-        # Set auth token if provided
-        if auth_token:
-            ngrok.set_auth_token(auth_token)
-            print(f"✓ Ngrok auth token set")
-        else:
-            print("⚠️  Warning: No auth token provided. You may hit ngrok's rate limits.")
-            print("   Get your free auth token from: https://dashboard.ngrok.com/get-started/your-authtoken")
+        # Download and setup cloudflared
+        print("📦 Setting up Cloudflare tunnel...")
+        subprocess.run(["wget", "-q", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64", "-O", "cloudflared"], check=True)
+        subprocess.run(["chmod", "+x", "cloudflared"], check=True)
         
-        # Terminate any previous ngrok sessions
-        ngrok.kill()
-        print("✓ Cleared previous ngrok sessions")
+        # Start cloudflared tunnel in background
+        print("🚀 Starting Cloudflare Tunnel...")
+        tunnel_process = subprocess.Popen([
+            "./cloudflared", "tunnel", 
+            "--url", f"http://localhost:{port}",
+            "--no-autoupdate"
+        ])
         
-        # Open a tunnel to the specified port
-        public_url = ngrok.connect(port)
-        print(f"🚀 Ngrok tunnel is active!")
-        print(f"📱 Access your Deep Live Cam Web Interface at: {public_url}")
-        print(f"🔗 Direct link: {public_url}")
+        # Give time for the tunnel to connect
+        print("⏳ Initializing tunnel...")
+        time.sleep(5)
         
-        return str(public_url)
+        print("🌐 Cloudflare tunnel is active!")
+        print("📱 Look for your public URL in the output above")
+        print("🔗 It will look like: https://random-subdomain.trycloudflare.com")
+        print("✅ No authentication required - unlimited bandwidth!")
+        
+        return "tunnel_active"
         
     except Exception as e:
-        print(f"❌ Error setting up ngrok: {e}")
+        print(f"❌ Error setting up Cloudflare tunnel: {e}")
         print("Make sure you have:")
-        print("1. Installed pyngrok: pip install pyngrok==7.0.5")
-        print("2. Set a valid auth token (optional but recommended)")
+        print("1. Internet connection to download cloudflared")
+        print("2. Proper permissions in the Colab environment")
         sys.exit(1)
 
 def setup_gpu_acceleration():
@@ -78,7 +78,7 @@ def setup_gpu_acceleration():
         return False
 
 def main():
-    """Main function to run Deep Live Cam with ngrok in Google Colab"""
+    """Main function to run Deep Live Cam with Cloudflare tunnel in Google Colab"""
     
     print("🎭 Deep Live Cam - Google Colab Edition")
     print("=" * 50)
@@ -86,16 +86,9 @@ def main():
     # Check GPU availability
     gpu_available = setup_gpu_acceleration()
     
-    # Default ngrok auth token (replace with your own)
-    # Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken
-    DEFAULT_AUTH_TOKEN = "2xbuOdCZEZxqQGx2r77BMgijYAm_5CTUFPLuyB8FWXWCLAmm8"
-    
-    # You can also set the token via environment variable
-    auth_token = os.getenv('NGROK_AUTH_TOKEN', DEFAULT_AUTH_TOKEN)
-    
-    # Set up ngrok tunnel
+    # Set up Cloudflare tunnel
     port = 5000
-    public_url = setup_ngrok(auth_token, port)
+    tunnel_status = setup_cloudflare_tunnel(port)
     
     # Add command line arguments for optimal performance
     if '--web' not in sys.argv:
@@ -136,14 +129,15 @@ def main():
     
     print("\n🌟 Starting Deep Live Cam Web Interface...")
     print("📋 Instructions:")
-    print("1. Click the ngrok URL above to access the web interface")
-    print("2. Upload your source face image")
-    print("3. Upload your target image/video")
-    print("4. Configure settings as needed")
-    print("5. Click 'Process' to start face swapping")
+    print("1. Look for the Cloudflare tunnel URL in the output above")
+    print("2. Click the https://xxxxx.trycloudflare.com URL")
+    print("3. Upload your source face image")
+    print("4. Upload your target image/video")
+    print("5. Configure settings as needed")
+    print("6. Click 'Process' to start face swapping")
     if gpu_available:
         print("🚀 GPU acceleration enabled for faster processing!")
-    print("\n⚠️  Note: Keep this cell running to maintain the ngrok tunnel")
+    print("\n⚠️  Note: Keep this cell running to maintain the Cloudflare tunnel")
     print("=" * 50)
     
     # Start the core application
