@@ -335,6 +335,16 @@ python run.py
 
 ## Features
 
+### 🎥 Multiple Video Upload & Batch Processing
+
+- **Upload multiple videos simultaneously** (up to 500MB each)
+- **Enhanced format support**: MP4, AVI, MOV, MKV, WebM, FLV, M4V, 3GP
+- **Drag & drop multiple files** for seamless workflow
+- **Real-time progress tracking** for each video
+- **Bulk download** all results as ZIP
+- **File size validation** and upload progress indicators
+- **Mixed media support**: Process videos and images in the same batch
+
 ### Resizable Preview Window
 
 Dynamically improve performance using the `--live-resizable` parameter.

@@ -907,13 +907,18 @@
           >
             <div class="upload-icon">🎥</div>
             <div class="upload-text">
-              Select Target Videos/Images (Multiple allowed)
+              Select Target Videos/Images (Multiple files supported)
+              <br /><small style="color: #666; font-size: 0.9em">
+                Supports: MP4, AVI, MOV, MKV, WebM, FLV, M4V, 3GP (No size
+                limit)
+                <br />💡 Tip: MP4 format is recommended for best performance
+              </small>
             </div>
             <input
               type="file"
               id="target-input"
               class="file-input"
-              accept="image/*,video/*"
+              accept="image/*,video/*,.mp4,.avi,.mov,.mkv,.webm,.flv,.m4v,.3gp"
               multiple
               onchange="uploadFiles(this, 'target')"
             />
@@ -1154,6 +1159,8 @@
         const files = input.files;
         if (!files || files.length === 0) return;
 
+        // No file size limit - removed size check
+
         const formData = new FormData();
         for (let file of files) {
           formData.append("file", file);
@@ -1161,7 +1168,9 @@
         formData.append("type", type);
 
         const statusDiv = document.getElementById(type + "-files");
-        statusDiv.innerHTML = '<div style="color: #667eea;">Uploading...</div>';
+        const fileCount = files.length;
+        const fileWord = fileCount === 1 ? "file" : "files";
+        statusDiv.innerHTML = `<div style="color: #667eea;">📤 Uploading ${fileCount} ${fileWord}...</div>`;
 
         fetch("/upload", {
           method: "POST",
@@ -1170,7 +1179,23 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.success) {
-              statusDiv.innerHTML = `<div style="color: #52c41a;">✓ ${data.files.length} file(s) uploaded</div>`;
+              const videoCount = data.files.filter(
+                (f) => f.type === "video"
+              ).length;
+              const imageCount = data.files.filter(
+                (f) => f.type === "image"
+              ).length;
+              let statusMessage = `<div style="color: #52c41a;">✅ ${data.files.length} file(s) uploaded successfully</div>`;
+
+              if (videoCount > 0 && imageCount > 0) {
+                statusMessage += `<div style="color: #1890ff; font-size: 0.9em;">📹 ${videoCount} video(s) + 🖼️ ${imageCount} image(s)</div>`;
+              } else if (videoCount > 0) {
+                statusMessage += `<div style="color: #1890ff; font-size: 0.9em;">📹 ${videoCount} video file(s)</div>`;
+              } else if (imageCount > 0) {
+                statusMessage += `<div style="color: #1890ff; font-size: 0.9em;">🖼️ ${imageCount} image file(s)</div>`;
+              }
+
+              statusDiv.innerHTML = statusMessage;
 
               // Update global lists
               if (type === "source") {
@@ -1398,12 +1423,29 @@
         const processBtn = document.getElementById("process-btn");
         if (uploadedSources.length > 0 && uploadedTargets.length > 0) {
           processBtn.disabled = false;
-          processBtn.textContent = `Start Batch Processing (${
+          const videoTargets = uploadedTargets.filter(
+            (f) => f.type === "video"
+          ).length;
+          const imageTargets = uploadedTargets.filter(
+            (f) => f.type === "image"
+          ).length;
+
+          let buttonText = `🚀 Start Batch Processing (${
             uploadedTargets.length
           } file${uploadedTargets.length > 1 ? "s" : ""})`;
+          if (videoTargets > 0 && imageTargets > 0) {
+            buttonText += ` - ${videoTargets} video(s) + ${imageTargets} image(s)`;
+          } else if (videoTargets > 0) {
+            buttonText += ` - ${videoTargets} video file(s)`;
+          } else if (imageTargets > 0) {
+            buttonText += ` - ${imageTargets} image file(s)`;
+          }
+
+          processBtn.textContent = buttonText;
         } else {
           processBtn.disabled = true;
-          processBtn.textContent = "Upload both source and target files";
+          processBtn.textContent =
+            "📁 Upload both source and target files to start";
         }
       }
 

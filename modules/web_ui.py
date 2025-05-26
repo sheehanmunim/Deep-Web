@@ -36,9 +36,10 @@ CORS(app)
 
 # Configure upload settings
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'mkv'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'm4v', '3gp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+# No file size limit - allow uploads as large as needed
+# app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # Removed file size limit
 
 # Global variables for tracking processing status
 processing_status = {"status": "idle", "message": "Ready", "progress": 0, "preview": None, "detailed_logs": []}
@@ -96,7 +97,7 @@ def load_switch_states():
         modules.globals.keep_fps = switch_states.get("keep_fps", True)
         modules.globals.keep_audio = switch_states.get("keep_audio", True)
         modules.globals.keep_frames = switch_states.get("keep_frames", False)
-        modules.globals.many_faces = switch_states.get("many_faces", False)
+        modules.globals.many_faces = switch_states.get("many_faces", True)
         modules.globals.map_faces = switch_states.get("map_faces", False)
         modules.globals.color_correction = switch_states.get("color_correction", False)
         modules.globals.nsfw_filter = switch_states.get("nsfw_filter", False)
