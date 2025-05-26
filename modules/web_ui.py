@@ -442,6 +442,16 @@ def download_result():
     
     return send_file(modules.globals.output_path, as_attachment=True)
 
+@app.route('/download/<filename>')
+def download_individual_file(filename):
+    """Download a specific processed file"""
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
 @app.route('/download-all')
 def download_all_results():
     """Download all batch results as a ZIP file"""
@@ -470,6 +480,40 @@ def download_all_results():
             except:
                 pass
             return response
+        
+        return send_file(zip_path, as_attachment=True, download_name=zip_filename)
+    
+    except Exception as e:
+        return jsonify({'error': f'Failed to create ZIP file: {str(e)}'}), 500
+
+@app.route('/download-selected', methods=['POST'])
+def download_selected_results():
+    """Download selected batch results as a ZIP file"""
+    global batch_results
+    
+    data = request.get_json()
+    selected_indices = data.get('selected', [])
+    
+    if not selected_indices:
+        return jsonify({'error': 'No files selected for download'}), 400
+    
+    if not batch_results:
+        return jsonify({'error': 'No results available for download'}), 404
+    
+    # Create a temporary ZIP file
+    zip_filename = f"deep_live_cam_selected_{int(time.time())}.zip"
+    zip_path = os.path.join(UPLOAD_FOLDER, zip_filename)
+    
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for index in selected_indices:
+                if 0 <= index < len(batch_results):
+                    result = batch_results[index]
+                    if os.path.exists(result['output_path']):
+                        # Add file to ZIP with a clean name
+                        clean_name = f"result_{index+1}_{result['target'].replace(' ', '_')}"
+                        file_ext = os.path.splitext(result['output_path'])[1]
+                        zipf.write(result['output_path'], f"{clean_name}{file_ext}")
         
         return send_file(zip_path, as_attachment=True, download_name=zip_filename)
     

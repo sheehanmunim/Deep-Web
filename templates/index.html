@@ -660,6 +660,78 @@
         border-radius: 10px;
         padding: 15px;
         text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .result-item.selected {
+        background: #e6f7ff;
+        border: 2px solid #1890ff;
+      }
+
+      .result-checkbox {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        z-index: 10;
+      }
+
+      .result-selection-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        background: #f0f4ff;
+        border-radius: 8px;
+        border-left: 4px solid #1890ff;
+      }
+
+      .selection-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .select-all-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .selection-info {
+        font-size: 0.9em;
+        color: #666;
+        font-weight: 500;
+      }
+
+      .download-selected-btn {
+        background: #1890ff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(24, 144, 255, 0.3);
+        margin-right: 10px;
+      }
+
+      .download-selected-btn:hover {
+        background: #0050b3;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(24, 144, 255, 0.4);
+      }
+
+      .download-selected-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
       .result-preview {
@@ -1008,8 +1080,46 @@
           <h3 style="margin-bottom: 20px; color: #333; text-align: center">
             Processing Results
           </h3>
+
+          <!-- Selection Header -->
+          <div
+            class="result-selection-header"
+            id="selection-header"
+            style="display: none"
+          >
+            <div class="selection-controls">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  cursor: pointer;
+                "
+              >
+                <input
+                  type="checkbox"
+                  class="select-all-checkbox"
+                  id="select-all-checkbox"
+                  onchange="toggleSelectAll()"
+                />
+                <span>Select All</span>
+              </label>
+              <div class="selection-info" id="selection-info">
+                0 of 0 files selected
+              </div>
+            </div>
+          </div>
+
           <div id="batch-results" class="batch-results"></div>
           <div class="download-section" style="margin-top: 20px">
+            <button
+              class="download-selected-btn"
+              id="download-selected-btn"
+              onclick="downloadSelectedResults()"
+              disabled
+            >
+              📋 Download Selected (ZIP)
+            </button>
             <button class="download-btn" onclick="downloadAllResults()">
               📦 Download All Results (ZIP)
             </button>
@@ -1038,6 +1148,7 @@
     <script>
       let uploadedSources = [];
       let uploadedTargets = [];
+      let selectedResults = new Set(); // Track selected result indices
 
       function uploadFiles(input, type) {
         const files = input.files;
@@ -1331,8 +1442,10 @@
 
         // Reset results counter and clear previous results
         displayedResultsCount = 0;
+        selectedResults.clear();
         document.getElementById("batch-results").innerHTML = "";
         document.getElementById("result-section").style.display = "none";
+        document.getElementById("selection-header").style.display = "none";
 
         // Reset and show processing details
         const detailsSection = document.getElementById("processing-details");
@@ -1544,6 +1657,13 @@
                 resultSection.style.display = "block";
               }
 
+              // Show selection header if not already visible
+              const selectionHeader =
+                document.getElementById("selection-header");
+              if (selectionHeader.style.display === "none") {
+                selectionHeader.style.display = "block";
+              }
+
               // Only add new results that haven't been displayed yet
               const newResults = data.results.slice(displayedResultsCount);
 
@@ -1558,8 +1678,10 @@
                         result.output_filename.toLowerCase().endsWith(".mov") ||
                         result.output_filename.toLowerCase().endsWith(".mkv"));
 
+                    const resultIndex = displayedResultsCount + index;
                     return `
-                  <div class="result-item" style="animation: fadeIn 0.5s ease-in;">
+                  <div class="result-item" data-result-index="${resultIndex}" style="animation: fadeIn 0.5s ease-in;">
+                    <input type="checkbox" class="result-checkbox" id="result-checkbox-${resultIndex}" onchange="toggleResultSelection(${resultIndex})">
                     <div class="result-info">
                       <strong>Target:</strong> ${result.target}<br>
                       <strong>Source:</strong> ${result.source}
@@ -1583,9 +1705,7 @@
                                 result.preview
                               }" 
                                    class="result-image" 
-                                   alt="Result ${
-                                     displayedResultsCount + index + 1
-                                   }"
+                                   alt="Result ${resultIndex + 1}"
                                    onclick="openImageFullscreen(this.src)"
                                    title="Click to view full size">
                             </div>`
@@ -1607,6 +1727,9 @@
 
                 batchResults.innerHTML += newResultsHTML;
                 displayedResultsCount = data.results.length;
+
+                // Update selection UI to reflect current state
+                updateSelectionUI();
               }
             }
           })
@@ -1616,12 +1739,138 @@
       }
 
       function downloadIndividualResult(filename) {
-        window.location.href = `/preview/${filename}`;
+        window.location.href = `/download/${filename}`;
       }
 
       function downloadAllResults() {
         // Download all results as a single ZIP file
         window.location.href = "/download-all";
+      }
+
+      function toggleResultSelection(resultIndex) {
+        const checkbox = document.getElementById(
+          `result-checkbox-${resultIndex}`
+        );
+        const resultItem = document.querySelector(
+          `[data-result-index="${resultIndex}"]`
+        );
+
+        if (checkbox.checked) {
+          selectedResults.add(resultIndex);
+          resultItem.classList.add("selected");
+        } else {
+          selectedResults.delete(resultIndex);
+          resultItem.classList.remove("selected");
+        }
+
+        updateSelectionUI();
+      }
+
+      function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById(
+          "select-all-checkbox"
+        );
+        const resultCheckboxes = document.querySelectorAll(".result-checkbox");
+
+        if (selectAllCheckbox.checked) {
+          // Select all
+          resultCheckboxes.forEach((checkbox, index) => {
+            checkbox.checked = true;
+            const resultIndex = parseInt(checkbox.id.split("-")[2]);
+            selectedResults.add(resultIndex);
+            const resultItem = document.querySelector(
+              `[data-result-index="${resultIndex}"]`
+            );
+            if (resultItem) {
+              resultItem.classList.add("selected");
+            }
+          });
+        } else {
+          // Deselect all
+          resultCheckboxes.forEach((checkbox) => {
+            checkbox.checked = false;
+            const resultIndex = parseInt(checkbox.id.split("-")[2]);
+            selectedResults.delete(resultIndex);
+            const resultItem = document.querySelector(
+              `[data-result-index="${resultIndex}"]`
+            );
+            if (resultItem) {
+              resultItem.classList.remove("selected");
+            }
+          });
+        }
+
+        updateSelectionUI();
+      }
+
+      function updateSelectionUI() {
+        const selectionInfo = document.getElementById("selection-info");
+        const downloadSelectedBtn = document.getElementById(
+          "download-selected-btn"
+        );
+        const selectAllCheckbox = document.getElementById(
+          "select-all-checkbox"
+        );
+        const resultCheckboxes = document.querySelectorAll(".result-checkbox");
+
+        const totalResults = resultCheckboxes.length;
+        const selectedCount = selectedResults.size;
+
+        // Update selection info
+        selectionInfo.textContent = `${selectedCount} of ${totalResults} files selected`;
+
+        // Enable/disable download selected button
+        downloadSelectedBtn.disabled = selectedCount === 0;
+
+        // Update select all checkbox state
+        if (selectedCount === 0) {
+          selectAllCheckbox.indeterminate = false;
+          selectAllCheckbox.checked = false;
+        } else if (selectedCount === totalResults) {
+          selectAllCheckbox.indeterminate = false;
+          selectAllCheckbox.checked = true;
+        } else {
+          selectAllCheckbox.indeterminate = true;
+        }
+      }
+
+      function downloadSelectedResults() {
+        if (selectedResults.size === 0) {
+          alert("Please select at least one file to download.");
+          return;
+        }
+
+        const selectedIndices = Array.from(selectedResults);
+
+        fetch("/download-selected", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ selected: selectedIndices }),
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.blob();
+            }
+            throw new Error("Network response was not ok");
+          })
+          .then((blob) => {
+            // Create a temporary link to download the ZIP file
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = `deep_live_cam_selected_${Date.now()}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          })
+          .catch((error) => {
+            console.error("Error downloading selected files:", error);
+            alert("Error downloading selected files. Please try again.");
+          });
       }
 
       function openImageFullscreen(imageSrc) {
