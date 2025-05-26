@@ -108,6 +108,46 @@ That's it! The web interface provides the easiest way to use all features of Dee
 
 ---
 
+## 🌩️ Google Colab Support
+
+**New!** Run Deep Live Cam directly in Google Colab with ngrok integration for easy web access!
+
+### Quick Colab Setup
+
+1. **Open Google Colab** and create a new notebook
+2. **Enable GPU runtime**: Runtime → Change runtime type → Hardware accelerator: GPU
+3. **Run this setup code:**
+
+```python
+# Clone and setup
+!git clone https://github.com/your-username/Deep-Live-Cam-New.git
+%cd Deep-Live-Cam-New
+!apt update -qq && apt install -y ffmpeg
+!pip install -r requirements.txt
+
+# Start with ngrok
+!python run_web_colab.py
+```
+
+4. **Access the web interface** using the ngrok URL provided in the output
+5. **Upload and process** your images/videos directly in the browser
+
+### Features Available in Colab:
+
+- ✅ Full web interface with ngrok tunneling
+- ✅ GPU acceleration for faster processing
+- ✅ No local installation required
+- ✅ Works on any device with internet access
+- ✅ Free tier available (with limitations)
+
+### 📋 Detailed Colab Guide
+
+For complete setup instructions, see [GOOGLE_COLAB_SETUP.md](GOOGLE_COLAB_SETUP.md)
+
+**Pro Tip:** Get a free ngrok auth token at [ngrok.com](https://ngrok.com) to avoid rate limits!
+
+---
+
 ### GPU Acceleration (Optional)
 
 <details>
