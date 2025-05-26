@@ -20,6 +20,7 @@ import modules.metadata
 import modules.ui as ui
 from modules.processors.frame.core import get_frame_processors_modules
 from modules.utilities import has_image_extension, is_image, is_video, detect_fps, create_video, extract_frames, get_temp_frame_paths, restore_audio, create_temp, move_temp, clean_temp, normalize_output_path
+from modules.memory_optimizer import memory_optimizer
 
 if 'ROCMExecutionProvider' in modules.globals.execution_providers:
     del torch
@@ -46,6 +47,8 @@ def parse_args() -> None:
     program.add_argument('--live-mirror', help='The live camera display as you see it in the front-facing camera frame', dest='live_mirror', action='store_true', default=False)
     program.add_argument('--live-resizable', help='The live camera frame is resizable', dest='live_resizable', action='store_true', default=False)
     program.add_argument('--max-memory', help='maximum amount of RAM in GB', dest='max_memory', type=int, default=suggest_max_memory())
+    program.add_argument('--gpu-memory-fraction', help='fraction of GPU memory to use (0.1-0.95)', dest='gpu_memory_fraction', type=float, default=0.8)
+    program.add_argument('--enable-memory-optimization', help='enable advanced memory optimization', dest='enable_memory_optimization', action='store_true', default=True)
     program.add_argument('--execution-provider', help='execution provider', dest='execution_provider', default=['cpu'], choices=suggest_execution_providers(), nargs='+')
     program.add_argument('--execution-threads', help='number of execution threads', dest='execution_threads', type=int, default=suggest_execution_threads())
     program.add_argument('--web', help='run as web interface', dest='web_mode', action='store_true', default=False)
@@ -78,6 +81,10 @@ def parse_args() -> None:
     modules.globals.execution_providers = decode_execution_providers(args.execution_provider)
     modules.globals.execution_threads = args.execution_threads
     modules.globals.web_mode = args.web_mode
+    
+    # Configure memory optimizer with user settings
+    if args.enable_memory_optimization:
+        memory_optimizer.gpu_memory_fraction = max(0.1, min(0.95, args.gpu_memory_fraction))
 
     #for ENHANCER tumbler:
     if 'face_enhancer' in args.frame_processor:
@@ -135,11 +142,10 @@ def suggest_execution_threads() -> int:
 
 
 def limit_resources() -> None:
-    # prevent tensorflow memory leak
-    gpus = tensorflow.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tensorflow.config.experimental.set_memory_growth(gpu, True)
-    # limit memory usage
+    # Apply advanced memory optimizations
+    memory_optimizer.optimize_for_inference()
+    
+    # Traditional memory limit (kept for compatibility)
     if modules.globals.max_memory:
         memory = modules.globals.max_memory * 1024 ** 3
         if platform.system().lower() == 'darwin':
@@ -154,8 +160,8 @@ def limit_resources() -> None:
 
 
 def release_resources() -> None:
-    if 'CUDAExecutionProvider' in modules.globals.execution_providers:
-        torch.cuda.empty_cache()
+    # Use advanced memory cache clearing
+    memory_optimizer.clear_memory_cache()
 
 
 def pre_check() -> bool:

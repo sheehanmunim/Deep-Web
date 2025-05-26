@@ -21,6 +21,7 @@ except ImportError:
 
 from modules import core
 import modules.globals
+from modules.memory_optimizer import memory_optimizer
 
 def setup_ngrok(auth_token=None, port=5000):
     """
@@ -100,23 +101,36 @@ def main():
     if '--web' not in sys.argv:
         sys.argv.append('--web')
     
+    # Apply memory optimizations
+    print("🔍 Optimizing memory configuration for Google Colab...")
+    sys_mem = memory_optimizer._get_system_memory_info()
+    gpu_info = memory_optimizer._get_gpu_memory_info()
+    
     # Add GPU acceleration if available
     if gpu_available:
         if '--execution-provider' not in sys.argv:
             sys.argv.extend(['--execution-provider', 'cuda'])
             print("✅ Enabled CUDA GPU acceleration")
         
-        # Set reasonable memory limit (leave some for system)
+        # Enable advanced memory optimization
+        if '--enable-memory-optimization' not in sys.argv:
+            sys.argv.append('--enable-memory-optimization')
+            print("✅ Enabled advanced memory optimization")
+        
+        # Set optimal GPU memory fraction for Colab (usually has good GPUs)
+        if '--gpu-memory-fraction' not in sys.argv and gpu_info:
+            primary_gpu = gpu_info[0]
+            # Colab typically has good GPUs, use aggressive settings
+            gpu_fraction = 0.85
+            sys.argv.extend(['--gpu-memory-fraction', str(gpu_fraction)])
+            print(f"🎮 GPU Memory: Using 85% of {primary_gpu['total']:.1f}GB VRAM (optimized for Colab)")
+        
+        # Set system memory limit for Colab
         if '--max-memory' not in sys.argv:
-            try:
-                import torch
-                gpu_memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
-                # Use 80% of GPU memory to leave some for system
-                recommended_memory = max(4, int(gpu_memory_gb * 0.8))
-                sys.argv.extend(['--max-memory', str(recommended_memory)])
-                print(f"✅ Set memory limit to {recommended_memory}GB")
-            except:
-                pass
+            # Colab typically has 12-13GB RAM, use most of it
+            recommended_memory = min(10, int(sys_mem['available'] * 0.8))
+            sys.argv.extend(['--max-memory', str(recommended_memory)])
+            print(f"💾 System Memory: Limited to {recommended_memory}GB (optimized for Colab)")
     else:
         print("🐌 Running on CPU - processing will be slower")
     

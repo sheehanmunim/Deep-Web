@@ -7,13 +7,14 @@ import modules.globals
 import modules.processors.frame.core
 from modules.core import update_status
 from modules.face_analyser import get_one_face, get_many_faces, default_source_face
-from modules.typing import Face, Frame
+from modules.custom_types import Face, Frame
 from modules.utilities import (
     conditional_download,
     is_image,
     is_video,
 )
 from modules.cluster_analysis import find_closest_centroid
+from modules.memory_optimizer import memory_optimizer
 import os
 
 FACE_SWAPPER = None
@@ -57,8 +58,20 @@ def get_face_swapper() -> Any:
     with THREAD_LOCK:
         if FACE_SWAPPER is None:
             model_path = os.path.join(models_dir, 'inswapper_128_fp16.onnx')
+            
+            # Get optimized session options and provider options
+            session_options = memory_optimizer.get_optimized_onnx_session_options()
+            provider_options = memory_optimizer.get_optimized_gpu_provider_options()
+            
+            # Create providers list with optimized options
+            providers = modules.globals.execution_providers.copy()
+            if 'CUDAExecutionProvider' in providers and provider_options:
+                providers = [('CUDAExecutionProvider', provider_options)] + [p for p in providers if p != 'CUDAExecutionProvider']
+            
             FACE_SWAPPER = insightface.model_zoo.get_model(
-                model_path, providers=modules.globals.execution_providers
+                model_path, 
+                providers=providers,
+                session_options=session_options
             )
     return FACE_SWAPPER
 

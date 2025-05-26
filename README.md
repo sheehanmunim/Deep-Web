@@ -119,7 +119,7 @@ pip uninstall -y onnxruntime onnxruntime-gpu
 pip install onnxruntime-gpu==1.16.3
 
 # 6. Start the web interface
-python run_web.py
+python run_web.py --gpu-memory-fraction 0.95 --max-memory 11
 ```
 
 Then **open your browser** and go to: `http://localhost:5000`

@@ -7,9 +7,10 @@ import cv2
 import numpy as np
 import modules.globals
 from tqdm import tqdm
-from modules.typing import Frame
+from modules.custom_types import Frame
 from modules.cluster_analysis import find_cluster_centroids, find_closest_centroid
 from modules.utilities import get_temp_directory_path, create_temp, extract_frames, clean_temp, get_temp_frame_paths
+from modules.memory_optimizer import memory_optimizer
 from pathlib import Path
 
 FACE_ANALYSER = None
@@ -19,7 +20,19 @@ def get_face_analyser() -> Any:
     global FACE_ANALYSER
 
     if FACE_ANALYSER is None:
-        FACE_ANALYSER = insightface.app.FaceAnalysis(name='buffalo_l', providers=modules.globals.execution_providers)
+        # Get optimized session options and provider options
+        session_options = memory_optimizer.get_optimized_onnx_session_options()
+        provider_options = memory_optimizer.get_optimized_gpu_provider_options()
+        
+        # Create providers list with optimized options
+        providers = modules.globals.execution_providers.copy()
+        if 'CUDAExecutionProvider' in providers and provider_options:
+            providers = [('CUDAExecutionProvider', provider_options)] + [p for p in providers if p != 'CUDAExecutionProvider']
+        
+        FACE_ANALYSER = insightface.app.FaceAnalysis(
+            name='buffalo_l', 
+            providers=providers
+        )
         FACE_ANALYSER.prepare(ctx_id=0, det_size=(640, 640))
     return FACE_ANALYSER
 

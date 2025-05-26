@@ -11,6 +11,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modules import core
+from modules.memory_optimizer import memory_optimizer
 
 def setup_gpu_acceleration():
     """Set up GPU acceleration for faster processing"""
@@ -47,6 +48,16 @@ def main():
     print("🎭 Deep Live Cam - Web Interface")
     print("=" * 40)
     
+    # Run memory diagnostics to get optimal settings
+    print("🔍 Analyzing system for optimal memory configuration...")
+    sys_mem = memory_optimizer._get_system_memory_info()
+    gpu_info = memory_optimizer._get_gpu_memory_info()
+    
+    print(f"💾 System RAM: {sys_mem['available']:.1f}GB available of {sys_mem['total']:.1f}GB total")
+    if gpu_info:
+        for gpu_id, info in gpu_info.items():
+            print(f"🎮 GPU {gpu_id}: {info['name']} - {info['free']:.1f}GB available of {info['total']:.1f}GB total")
+    
     # Check GPU availability
     gpu_available = setup_gpu_acceleration()
     onnx_gpu_available = check_onnx_runtime_gpu() if gpu_available else False
@@ -61,17 +72,33 @@ def main():
             sys.argv.extend(['--execution-provider', 'cuda'])
             print("✅ Enabled CUDA GPU acceleration")
         
-        # Set reasonable memory limit (leave some for system)
+        # Enable memory optimization
+        if '--enable-memory-optimization' not in sys.argv:
+            sys.argv.append('--enable-memory-optimization')
+            print("✅ Enabled advanced memory optimization")
+        
+        # Set optimal GPU memory fraction based on GPU capabilities
+        if '--gpu-memory-fraction' not in sys.argv and gpu_info:
+            primary_gpu = gpu_info[0]
+            if primary_gpu['total'] < 8:
+                gpu_fraction = 0.6  # Conservative for GPUs < 8GB
+                print(f"🎮 GPU Memory: Using 60% of {primary_gpu['total']:.1f}GB VRAM (conservative for <8GB GPU)")
+            else:
+                gpu_fraction = 0.8  # More aggressive for larger GPUs
+                print(f"🎮 GPU Memory: Using 80% of {primary_gpu['total']:.1f}GB VRAM")
+            
+            sys.argv.extend(['--gpu-memory-fraction', str(gpu_fraction)])
+        
+        # Set reasonable system memory limit
         if '--max-memory' not in sys.argv:
-            try:
-                import torch
-                gpu_memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
-                # Use 80% of GPU memory to leave some for system
-                recommended_memory = max(4, int(gpu_memory_gb * 0.8))
-                sys.argv.extend(['--max-memory', str(recommended_memory)])
-                print(f"✅ Set memory limit to {recommended_memory}GB")
-            except:
-                pass
+            if sys_mem['available'] < 8:
+                recommended_memory = 4
+                print(f"💾 System Memory: Limited to 4GB (system has {sys_mem['available']:.1f}GB available)")
+            else:
+                recommended_memory = min(8, int(sys_mem['available'] * 0.7))
+                print(f"💾 System Memory: Limited to {recommended_memory}GB (70% of available)")
+            
+            sys.argv.extend(['--max-memory', str(recommended_memory)])
     elif gpu_available and not onnx_gpu_available:
         print("🔧 GPU detected but ONNX Runtime GPU not properly installed")
         print("   Run 'python fix_gpu_setup.py' or 'fix-gpu-setup.bat' to enable GPU acceleration")
@@ -86,9 +113,13 @@ def main():
     print("📍 Access your interface at: http://localhost:5000")
     
     if gpu_available and onnx_gpu_available:
-        print("🚀 GPU acceleration enabled for faster processing!")
+        print("🚀 GPU acceleration enabled with memory optimization!")
+        print("💡 Memory settings automatically optimized for your hardware")
+    else:
+        print("🐌 Running on CPU with memory optimization")
     
     print("🔗 For Google Colab support, use: python run_web_colab.py")
+    print("🔍 For manual optimization, run: python memory_diagnostics.py")
     print("=" * 40)
     
     # Start the core application

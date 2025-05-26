@@ -8,7 +8,7 @@ import modules.globals
 import modules.processors.frame.core
 from modules.core import update_status
 from modules.face_analyser import get_one_face
-from modules.typing import Frame, Face
+from modules.custom_types import Frame, Face
 from modules.utilities import (
     conditional_download,
     is_image,
