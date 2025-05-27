@@ -348,7 +348,7 @@ def start_processing():
     batch_results = []
     
     # Reset status
-    processing_status = {"status": "processing", "message": "Starting batch processing...", "progress": 0, "preview": None, "batch_progress": 0, "total_files": len(uploaded_targets), "detailed_logs": []}
+    processing_status = {"status": "processing", "message": "Starting batch processing...", "progress": 0, "preview": None, "batch_progress": 0, "total_files": len(uploaded_targets), "detailed_logs": [], "current_target": 0, "total_targets": len(uploaded_targets)}
     
     # Start batch processing in a separate thread
     def batch_process_wrapper():
@@ -375,11 +375,13 @@ def start_processing():
                 output_filename = f"output_{target_name}{target_ext}"
                 modules.globals.output_path = os.path.join(UPLOAD_FOLDER, output_filename)
                 
-                # Update status
+                # Update status with count information
                 processing_status["message"] = f"Processing {target_file['original_name']} ({i+1}/{total_targets})"
                 processing_status["batch_progress"] = i
+                processing_status["current_target"] = i + 1
+                processing_status["total_targets"] = total_targets
                 
-                update_status(f"🎯 Processing: {target_file['original_name']}", "PROCESS")
+                update_status(f"🎯 Processing: {target_file['original_name']} ({i+1}/{total_targets})", "PROCESS")
                 update_status(f"💾 Output will be saved as: {output_filename}", "PROCESS")
                 
                 # Process current file
@@ -416,6 +418,7 @@ def start_processing():
                 
                 completed += 1
                 processing_status["progress"] = int((completed / total_targets) * 100)
+                processing_status["current_target"] = completed
             
             processing_status["status"] = "completed"
             processing_status["message"] = f"Batch processing completed! {completed} files processed."

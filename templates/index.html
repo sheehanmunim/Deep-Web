@@ -498,10 +498,11 @@
 
       .progress-bar {
         width: 100%;
-        height: 10px;
+        height: 25px;
         background: #f0f0f0;
         border-radius: 5px;
         overflow: hidden;
+        position: relative;
       }
 
       .progress-fill {
@@ -509,6 +510,19 @@
         background: linear-gradient(90deg, #667eea, #764ba2);
         width: 0%;
         transition: width 0.3s ease;
+      }
+
+      .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #333;
+        font-size: 12px;
+        font-weight: 600;
+        text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        pointer-events: none;
+        z-index: 10;
       }
 
       .video-progress-info {
@@ -1054,6 +1068,7 @@
           </div>
           <div class="progress-bar">
             <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-text" id="progress-text"></div>
           </div>
 
           <!-- Detailed Processing Logs -->
@@ -1503,6 +1518,9 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.success) {
+              // Initialize progress text
+              const progressText = document.getElementById("progress-text");
+              progressText.textContent = `0/${uploadedTargets.length}`;
               pollStatus();
             } else {
               document.getElementById("status-text").textContent = data.error;
@@ -1526,6 +1544,14 @@
               document.getElementById("status-text").textContent = data.message;
               document.getElementById("progress-fill").style.width =
                 data.progress + "%";
+
+              // Update progress text with count information for batch processing
+              const progressText = document.getElementById("progress-text");
+              if (data.current_target && data.total_targets) {
+                progressText.textContent = `${data.current_target}/${data.total_targets}`;
+              } else {
+                progressText.textContent = data.progress + "%";
+              }
 
               // Update video progress information if available
               updateVideoProgress(data.video_progress);
@@ -1552,11 +1578,17 @@
                 clearInterval(statusInterval);
                 updateProcessButton();
 
+                // Clear progress text when completed
+                document.getElementById("progress-text").textContent = "";
+
                 // Show any remaining results
                 displayBatchResults(true);
               } else if (data.status === "error") {
                 clearInterval(statusInterval);
                 updateProcessButton();
+
+                // Clear progress text on error
+                document.getElementById("progress-text").textContent = "";
                 document.getElementById("result-section").style.display =
                   "none";
               }
