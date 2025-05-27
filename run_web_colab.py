@@ -22,7 +22,7 @@ from modules.memory_optimizer import memory_optimizer
 
 def setup_cloudflare_tunnel(port=5000):
     """
-    Set up Cloudflare tunnel for Google Colab
+    Set up Cloudflare tunnel for Google Colab with optimized settings
     
     Args:
         port (int): Local port to expose (default: 5000)
@@ -36,12 +36,16 @@ def setup_cloudflare_tunnel(port=5000):
         subprocess.run(["wget", "-q", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64", "-O", "cloudflared"], check=True)
         subprocess.run(["chmod", "+x", "cloudflared"], check=True)
         
-        # Start cloudflared tunnel in background
-        print("🚀 Starting Cloudflare Tunnel...")
+        # Start cloudflared tunnel with optimized settings for better download performance
+        print("🚀 Starting Cloudflare Tunnel with optimized settings...")
         tunnel_process = subprocess.Popen([
             "./cloudflared", "tunnel", 
             "--url", f"http://localhost:{port}",
-            "--no-autoupdate"
+            "--no-autoupdate",
+            "--protocol", "http2",  # Use HTTP/2 for better performance
+            "--http2-origin",       # Enable HTTP/2 to origin
+            "--compression-quality", "2",  # Lower compression for faster downloads
+            "--no-chunked-encoding"  # Disable chunked encoding for large files
         ])
         
         # Give time for the tunnel to connect
@@ -51,7 +55,7 @@ def setup_cloudflare_tunnel(port=5000):
         print("🌐 Cloudflare tunnel is active!")
         print("📱 Look for your public URL in the output above")
         print("🔗 It will look like: https://random-subdomain.trycloudflare.com")
-        print("✅ No authentication required - unlimited bandwidth!")
+        print("✅ Optimized for faster downloads with HTTP/2 and reduced compression!")
         
         return "tunnel_active"
         
