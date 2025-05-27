@@ -320,6 +320,19 @@ def update_settings():
     save_switch_states()
     return jsonify({'success': True})
 
+@app.route('/settings', methods=['GET'])
+def get_settings():
+    """Get current application settings"""
+    return jsonify({
+        'keep_fps': modules.globals.keep_fps,
+        'keep_audio': modules.globals.keep_audio,
+        'keep_frames': modules.globals.keep_frames,
+        'many_faces': modules.globals.many_faces,
+        'map_faces': modules.globals.map_faces,
+        'nsfw_filter': modules.globals.nsfw_filter,
+        'face_enhancer': modules.globals.fp_ui.get('face_enhancer', False)
+    })
+
 @app.route('/process', methods=['POST'])
 def start_processing():
     """Start the face swapping process (single or batch)"""

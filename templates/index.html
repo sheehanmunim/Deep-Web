@@ -964,7 +964,6 @@
                 <input
                   type="checkbox"
                   id="keep_fps"
-                  checked
                   onchange="updateSetting('keep_fps', this.checked)"
                 />
                 <span class="slider"></span>
@@ -976,7 +975,6 @@
                 <input
                   type="checkbox"
                   id="keep_audio"
-                  checked
                   onchange="updateSetting('keep_audio', this.checked)"
                 />
                 <span class="slider"></span>
@@ -1021,7 +1019,6 @@
                 <input
                   type="checkbox"
                   id="face_enhancer"
-                  checked
                   onchange="updateSetting('face_enhancer', this.checked)"
                 />
                 <span class="slider"></span>
@@ -2017,12 +2014,27 @@
           });
       }
 
-      // Initialize face enhancer setting on page load
+      // Load and initialize settings from backend
       function initializeSettings() {
-        const faceEnhancerCheckbox = document.getElementById("face_enhancer");
-        if (faceEnhancerCheckbox.checked) {
-          updateSetting("face_enhancer", true);
-        }
+        fetch("/settings")
+          .then((response) => response.json())
+          .then((settings) => {
+            // Apply settings to checkboxes
+            document.getElementById("keep_fps").checked = settings.keep_fps;
+            document.getElementById("keep_audio").checked = settings.keep_audio;
+            document.getElementById("keep_frames").checked =
+              settings.keep_frames;
+            document.getElementById("many_faces").checked = settings.many_faces;
+            document.getElementById("nsfw_filter").checked =
+              settings.nsfw_filter;
+            document.getElementById("face_enhancer").checked =
+              settings.face_enhancer;
+
+            console.log("Settings loaded:", settings);
+          })
+          .catch((error) => {
+            console.error("Error loading settings:", error);
+          });
       }
 
       // Initialize
